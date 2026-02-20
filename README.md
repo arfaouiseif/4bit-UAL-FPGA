@@ -119,7 +119,7 @@ S0 → S1 (si '1') → S2 (si '0') → S3 (si '1') → détection (si '1')
 ---
 
 ### SEL = 0011 : FSM Mealy - Détection simultanée
-- **Fonction** : Détecte "1011" sur A[0] ET "0110" sur B[0] simultanément
+- **Fonction** : Détecte "0110" sur A[0] ET "0110" sur B[0] simultanément
 - **Résultat** : 
   - `result[1]` = détection sur A
   - `result[0]` = détection sur B
