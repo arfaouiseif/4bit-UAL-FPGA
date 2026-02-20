@@ -1,5 +1,5 @@
-# UAL 4 bits - Unité Arithmétique et Logique
-## Architecture VHDL Modulaire pour FPGA
+# UAL 4 bits - Unité Arithmétique et Logique ⭐ VERSION ÉTENDUE
+## Architecture VHDL Modulaire pour FPGA - 10 Opérations
 
 ---
 
@@ -8,20 +8,22 @@
 2. [Architecture](#architecture)
 3. [Liste des fichiers](#liste-des-fichiers)
 4. [Opérations disponibles](#opérations-disponibles)
-5. [Signaux d'entrée/sortie](#signaux-dentrée-sortie)
-6. [Guide d'utilisation](#guide-dutilisation)
-7. [Implémentation sur FPGA](#implémentation-sur-fpga)
-8. [Tests et Simulation](#tests-et-simulation)
+5. [Nouvelles opérations originales](#nouvelles-opérations-originales)
+6. [Signaux d'entrée/sortie](#signaux-dentrée-sortie)
+7. [Guide d'utilisation](#guide-dutilisation)
+8. [Implémentation sur FPGA](#implémentation-sur-fpga)
+9. [Tests et Simulation](#tests-et-simulation)
 
 ---
 
 ## Description
 
-Cette UAL (Unité Arithmétique et Logique) est conçue pour des cartes FPGA et implémente 8 opérations différentes sur des nombres 4 bits. L'architecture est entièrement modulaire avec des composants séparés pour chaque opération.
+Cette UAL (Unité Arithmétique et Logique) est conçue pour des cartes FPGA et implémente **10 opérations différentes** sur des nombres 4 bits, incluant 2 opérations **originales et avancées**. L'architecture est entièrement modulaire avec des composants séparés pour chaque opération.
 
 ### Caractéristiques principales :
 - ✅ **Architecture modulaire** : chaque opération dans son propre fichier
-- ✅ **8 opérations complètes** sélectionnables via SEL[3:0]
+- ✅ **10 opérations complètes** sélectionnables via SEL[3:0]
+- ✅ **2 opérations originales** : Détecteur de Palindrome + Convertisseur Gray Code
 - ✅ **Flags d'état** : Carry, Zero, Sign
 - ✅ **Afficheur 7 segments** intégré
 - ✅ **Code propre et testé** prêt pour implémentation
@@ -40,6 +42,8 @@ UAL_principale (Top Module)
 ├── counter_sync          (SEL = 0101)
 ├── display_A             (SEL = 0110)
 ├── display_B             (SEL = 0111)
+├── palindrome_detector   (SEL = 1000) 
+├── gray_code_converter   (SEL = 1001) 
 └── hex_to_7seg          (Décodeur partagé)
 ```
 
@@ -51,7 +55,7 @@ UAL_principale (Top Module)
 
 | Fichier | Description |
 |---------|-------------|
-| `UAL_principale.vhd` | **Module principal** intégrant tous les composants |
+| `UAL_principale_v2.vhd` | **Module principal** intégrant tous les composants (10 opérations) |
 | `alu_addition.vhd` | Addition binaire avec flags |
 | `alu_soustraction.vhd` | Soustraction binaire avec gestion du signe |
 | `fsm_mealy_simple.vhd` | FSM Mealy - Détecteur de séquence "1011" |
@@ -60,14 +64,29 @@ UAL_principale (Top Module)
 | `counter_sync.vhd` | Compteur synchrone configurable |
 | `display_A.vhd` | Affichage 7 segments de A |
 | `display_B.vhd` | Affichage 7 segments de B |
+| `palindrome_detector.vhd` |  Détecteur de palindrome binaire |
+| `gray_code_converter.vhd` | ⭐ Convertisseur Gray Code bidirectionnel |
 | `hex_to_7seg.vhd` | Décodeur hexadécimal → 7 segments |
 
 ### Fichiers de Test et Contraintes
 
 | Fichier | Description |
 |---------|-------------|
-| `UAL_principale_tb.vhd` | Testbench complet pour simulation |
+| `UAL_principale_v2_tb.vhd` | Testbench complet pour simulation (10 opérations) |
+| `palindrome_detector_test.vhd` | Testbench exhaustif pour le palindrome |
+| `testbenches_individuels.vhd` | Tests unitaires des modules de base |
 | `UAL_contraintes.xdc` | Contraintes pour Basys3/Nexys (exemple) |
+
+### Documentation
+
+| Fichier | Description |
+|---------|-------------|
+| `README.md` | Documentation principale (ce fichier) |
+| `NOUVELLES_OPERATIONS.md` | Documentation détaillée des 2 nouvelles opérations |
+| `STRUCTURE_PROJET.txt` | Organisation et checklist |
+| `GUIDE_CONNEXION_MATERIELLE.txt` | Schémas de câblage FPGA |
+| `GUIDE_MIGRATION.txt` | Comment passer de 8 à 10 opérations |
+| `FIX_PALINDROME_BUG.txt` | Explication du bug palindrome et correction |
 
 ---
 
@@ -119,7 +138,7 @@ S0 → S1 (si '1') → S2 (si '0') → S3 (si '1') → détection (si '1')
 ---
 
 ### SEL = 0011 : FSM Mealy - Détection simultanée
-- **Fonction** : Détecte "0110" sur A[0] ET "0110" sur B[0] simultanément
+- **Fonction** : Détecte "1011" sur A[0] ET "0110" sur B[0] simultanément
 - **Résultat** : 
   - `result[1]` = détection sur A
   - `result[0]` = détection sur B
@@ -175,6 +194,123 @@ A = 0101 (initialise à 5), B = 0010 (enable=1, up)
 
 ---
 
+## Nouvelles Opérations Originales
+
+### SEL = 1000 : Détecteur de Palindrome 
+
+- **Fonction** : Détecte si A est un palindrome binaire (se lit pareil dans les deux sens)
+- **Exemples de palindromes** : 0000, 0110, 1001, 1111
+- **Exemples NON palindromes** : 0011, 1010, 0100
+
+**Sortie détaillée :**
+- `result[0]` = '1' si palindrome détecté, '0' sinon
+- `result[2:1]` = nombre de paires de bits symétriques (0, 1, ou 2)
+- `result[3]` = réservé (toujours '0')
+- `carry` = '1' si palindrome parfait
+- `zero` = '1' si aucune symétrie détectée
+- `sign` = '1' si au moins une paire symétrique
+
+**Table des résultats :**
+```
+┌─────────┬────────────┬──────────────┬─────────────────┬──────────────┐
+│ A       │ Palindrome │ Paires sym.  │ Result (hexa)   │ Afficheur    │
+├─────────┼────────────┼──────────────┼─────────────────┼──────────────┤
+│ 0000    │   OUI ✓    │      2       │    0101         │    "5"       │
+│ 0110    │   OUI ✓    │      2       │    0101         │    "5"       │
+│ 1001    │   OUI ✓    │      2       │    0101         │    "5"       │
+│ 1111    │   OUI ✓    │      2       │    0101         │    "5"       │
+│         │            │              │                 │              │
+│ 0011    │   NON ✗    │      1       │    0010         │    "2"       │
+│ 0101    │   NON ✗    │      1       │    0010         │    "2"       │
+│ 1100    │   NON ✗    │      1       │    0010         │    "2"       │
+│ 0111    │   NON ✗    │      1       │    0010         │    "2"       │
+│         │            │              │                 │              │
+│ 0001    │   NON ✗    │      0       │    0000         │    "0"       │
+│ 0010    │   NON ✗    │      0       │    0000         │    "0"       │
+│ 0100    │   NON ✗    │      0       │    0000         │    "0"       │
+│ 1000    │   NON ✗    │      0       │    0000         │    "0"       │
+│ 1010    │   NON ✗    │      0       │    0000         │    "0"       │
+│ 1110    │   NON ✗    │      0       │    0000         │    "0"       │
+└─────────┴────────────┴──────────────┴─────────────────┴──────────────┘
+```
+
+**Quand affiche-t-on "0" ?**
+L'afficheur montre "0" pour les 6 nombres qui n'ont AUCUNE paire symétrique :
+- **0001** : Bit[0]≠Bit[3] ET Bit[1]≠Bit[2] → Aucune symétrie
+- **0010** : Bit[0]≠Bit[3] ET Bit[1]≠Bit[2] → Aucune symétrie
+- **0100** : Bit[0]≠Bit[3] ET Bit[1]≠Bit[2] → Aucune symétrie
+- **1000** : Bit[0]≠Bit[3] ET Bit[1]≠Bit[2] → Aucune symétrie
+- **1010** : Bit[0]≠Bit[3] ET Bit[1]≠Bit[2] → Aucune symétrie
+- **1110** : Bit[0]≠Bit[3] ET Bit[1]≠Bit[2] → Aucune symétrie
+
+**Pourquoi c'est intéressant :**
+- Pattern matching de base
+- Introduction aux algorithmes de reconnaissance
+- Visualisation de symétries binaires
+- Unique et original !
+
+---
+
+### SEL = 1001 : Convertisseur Gray Code ⭐
+
+- **Fonction** : Convertit entre code binaire et code Gray (bidirectionnel)
+- **Contrôle** : B[0] sélectionne la direction
+  - B[0] = 0 : Binaire → Gray
+  - B[0] = 1 : Gray → Binaire
+
+**Qu'est-ce que le Gray Code ?**
+Le code Gray est un code binaire où deux valeurs consécutives ne diffèrent que d'un seul bit. Très utilisé en industrie pour éviter les erreurs lors de transitions.
+
+**Table de conversion complète :**
+```
+┌──────────┬─────────┬────────────┬──────────────────────────────┐
+│ Binaire  │ Décimal │ Gray Code  │ Différence avec précédent    │
+├──────────┼─────────┼────────────┼──────────────────────────────┤
+│  0000    │    0    │   0000     │ -                            │
+│  0001    │    1    │   0001     │ 1 bit  (position 0)          │
+│  0010    │    2    │   0011     │ 1 bit  (position 1)          │
+│  0011    │    3    │   0010     │ 1 bit  (position 0)          │
+│  0100    │    4    │   0110     │ 1 bit  (position 2)          │
+│  0101    │    5    │   0111     │ 1 bit  (position 0)          │
+│  0110    │    6    │   0101     │ 1 bit  (position 1)          │
+│  0111    │    7    │   0100     │ 1 bit  (position 0)          │
+│  1000    │    8    │   1100     │ 1 bit  (position 3)          │
+│  1001    │    9    │   1101     │ 1 bit  (position 0)          │
+│  1010    │   10    │   1111     │ 1 bit  (position 1)          │
+│  1011    │   11    │   1110     │ 1 bit  (position 0)          │
+│  1100    │   12    │   1010     │ 1 bit  (position 2)          │
+│  1101    │   13    │   1011     │ 1 bit  (position 0)          │
+│  1110    │   14    │   1001     │ 1 bit  (position 1)          │
+│  1111    │   15    │   1000     │ 1 bit  (position 0)          │
+└──────────┴─────────┴────────────┴──────────────────────────────┘
+```
+
+**Exemples :**
+```
+Mode Binaire → Gray (B[0]=0):
+  A = 0010 (2) → result = 0011 (3 en Gray) → Afficheur = "3"
+  A = 0011 (3) → result = 0010 (2 en Gray) → Afficheur = "2"
+  A = 0101 (5) → result = 0111 (7 en Gray) → Afficheur = "7"
+
+Mode Gray → Binaire (B[0]=1):
+  A = 0011 (Gray) → result = 0010 (2 bin) → Afficheur = "2"
+  A = 0111 (Gray) → result = 0101 (5 bin) → Afficheur = "5"
+```
+
+**Pourquoi c'est intéressant :**
+- **Utilisé en vrai** dans l'industrie (encodeurs rotatifs, ADC)
+- Évite les erreurs lors de transitions mécaniques
+- Conversion réversible et déterministe
+- Démonstration d'un concept avancé
+
+**Applications réelles :**
+- Encodeurs rotatifs (position angulaire)
+- Conversion analogique-numérique
+- Transmission de données
+- Karnaugh maps en logique
+
+---
+
 ## Signaux d'Entrée/Sortie
 
 ### Entrées
@@ -201,7 +337,7 @@ A = 0101 (initialise à 5), B = 0010 (enable=1, up)
 
 ## Guide d'Utilisation
 
-### 1. Opérations Combinatoires (Addition, Soustraction, Affichage)
+### 1. Opérations Combinatoires (Addition, Soustraction, Affichage, Palindrome, Gray Code)
 
 Ces opérations ne nécessitent **pas d'horloge**, le résultat est immédiat :
 
@@ -211,6 +347,17 @@ SEL <= "0000";
 A <= "0101";  -- 5
 B <= "0011";  -- 3
 -- result = "1000" (8) immédiatement
+
+-- Exemple de détection palindrome : 0110
+SEL <= "1000";
+A <= "0110";  -- Palindrome!
+-- result = "0101" (5), carry = '1'
+
+-- Exemple Gray Code : 5 binaire → Gray
+SEL <= "1001";
+A <= "0101";  -- 5 en binaire
+B <= "0000";  -- B[0]=0 pour Bin→Gray
+-- result = "0111" (7 en Gray), afficheur = "7"
 ```
 
 ### 2. Opérations Séquentielles (FSM, Shift, Counter)
@@ -256,8 +403,22 @@ Pour afficher sur votre FPGA :
 
 Dans Vivado/Quartus :
 1. Créez un nouveau projet
-2. Ajoutez **tous les fichiers .vhd** comme Design Sources
-3. Définissez `UAL_principale.vhd` comme **Top Module**
+2. Ajoutez **tous les 12 fichiers .vhd** comme Design Sources
+3. Définissez `UAL_principale_v2.vhd` comme **Top Module**
+
+**Liste des fichiers à ajouter :**
+- UAL_principale_v2.vhd ⭐ (Top Module)
+- alu_addition.vhd
+- alu_soustraction.vhd
+- fsm_mealy_simple.vhd
+- fsm_mealy_dual.vhd
+- shift_register.vhd
+- counter_sync.vhd
+- display_A.vhd
+- display_B.vhd
+- palindrome_detector.vhd ⭐ (Nouveau)
+- gray_code_converter.vhd ⭐ (Nouveau)
+- hex_to_7seg.vhd
 
 ### Étape 2 : Adapter les contraintes
 
@@ -297,10 +458,10 @@ Le fichier `UAL_contraintes.xdc` est un exemple pour **Basys3/Nexys A7**. Vous d
 
 ### Lancer la simulation
 
-Le testbench `UAL_principale_tb.vhd` teste toutes les opérations :
+Le testbench `UAL_principale_v2_tb.vhd` teste toutes les **10 opérations** :
 
 1. Dans Vivado : Add Sources → Add or create simulation sources
-2. Ajoutez `UAL_principale_tb.vhd`
+2. Ajoutez `UAL_principale_v2_tb.vhd`
 3. Run Simulation → Run Behavioral Simulation
 4. Observez les signaux dans la fenêtre de forme d'onde
 
@@ -312,10 +473,21 @@ Le testbench `UAL_principale_tb.vhd` teste toutes les opérations :
 ✅ Compteur : croissant, décroissant
 ✅ Affichage A et B
 ✅ FSM Mealy simple et double
+✅ **Palindrome** : test de tous les palindromes 4 bits ⭐
+✅ **Gray Code** : conversions Bin→Gray et Gray→Bin ⭐
+
+### Testbench spécifique palindrome
+
+Pour tester exhaustivement le détecteur de palindrome :
+```
+Utilisez palindrome_detector_test.vhd
+→ Teste TOUS les 16 cas possibles (0000 à 1111)
+→ Affiche les résultats détaillés pour chaque valeur
+```
 
 ### Temps de simulation
 
-La simulation complète s'exécute sur ~1 µs et affiche des rapports à chaque test.
+La simulation complète s'exécute sur ~1.5 µs et affiche des rapports à chaque test.
 
 ---
 
@@ -327,12 +499,27 @@ La simulation complète s'exécute sur ~1 µs et affiche des rapports à chaque 
 - Pour afficher sur plusieurs afficheurs, ajoutez un multiplexeur temporel
 
 ### ⚠️ Horloge
-- Opérations 0000, 0001, 0110, 0111 : **sans horloge**
-- Opérations 0010, 0011, 0100, 0101 : **avec horloge obligatoire**
+- Opérations **SANS horloge** : 0000, 0001, 0110, 0111, **1000, 1001**
+- Opérations **AVEC horloge** : 0010, 0011, 0100, 0101
+
+**Important** : Les 2 nouvelles opérations (Palindrome et Gray Code) sont **combinatoires** et ne nécessitent PAS d'horloge !
 
 ### ⚠️ Reset
 - Toujours faire un reset initial pour les opérations séquentielles
 - Reset asynchrone actif haut ('1' = reset)
+
+### 💡 Astuces pour les nouvelles opérations
+
+**Palindrome :**
+- Palindromes 4 bits : uniquement 0000, 0110, 1001, 1111
+- L'afficheur montre "5" pour palindromes, "2" pour 1 symétrie, "0" pour aucune symétrie
+- Le flag `carry` est le meilleur indicateur : '1' = palindrome parfait
+
+**Gray Code :**
+- Utilisez B[0] pour changer la direction de conversion
+- B[0]=0 : Binaire → Gray (mode par défaut)
+- B[0]=1 : Gray → Binaire (mode inverse)
+- Très visuel : changez A et observez que la transition ne change qu'un seul segment !
 
 ---
 
@@ -364,6 +551,106 @@ Envoyer bits sur A[0] via horloge :
 → result[0] = '1' (séquence détectée!)
 ```
 
+### Exemple 4 : Test de palindromes
+```
+SEL = 1000
+Tester différentes valeurs :
+A = 0110 → Afficheur = "5" (palindrome ✓)
+A = 1001 → Afficheur = "5" (palindrome ✓)
+A = 0011 → Afficheur = "2" (1 symétrie, pas palindrome)
+A = 1010 → Afficheur = "0" (0 symétrie)
+```
+
+### Exemple 5 : Conversion Gray Code
+```
+SEL = 1001, B[0] = 0 (Binaire → Gray)
+Compter en binaire et observer en Gray :
+A = 0000 → Afficheur = "0"
+A = 0001 → Afficheur = "1"
+A = 0010 → Afficheur = "3" ← Surprise!
+A = 0011 → Afficheur = "2" ← Surprise!
+A = 0100 → Afficheur = "6"
+...
+
+On observe que chaque transition ne change qu'un segment!
+```
+
+---
+
+## 📚 FAQ - Questions Fréquentes
+
+### Q1 : Combien d'opérations possède cette UAL ?
+**R :** 10 opérations au total : 8 opérations de base + 2 opérations avancées (Palindrome et Gray Code).
+
+### Q2 : Quelles sont les opérations qui nécessitent une horloge ?
+**R :** Seulement 4 opérations : FSM Mealy (SEL=0010 et 0011), Shift Register (SEL=0100), et Compteur (SEL=0101). Les nouvelles opérations Palindrome et Gray Code sont combinatoires (pas d'horloge).
+
+### Q3 : Pourquoi le palindrome affiche-t-il "0" pour 1010 ?
+**R :** C'est **correct** ! 1010 n'a AUCUNE paire de bits symétriques :
+- Bit[0] vs Bit[3] : 0 ≠ 1 (pas symétrique)
+- Bit[1] vs Bit[2] : 1 ≠ 0 (pas symétrique)
+Donc result = 0000 → Afficheur = "0"
+
+**Les 6 nombres qui donnent "0" :**
+0001, 0010, 0100, 1000, 1010, 1110 (aucune symétrie)
+
+### Q4 : Quels nombres sont des palindromes sur 4 bits ?
+**R :** Il y a exactement **4 palindromes** sur 4 bits :
+- 0000 (0)
+- 0110 (6)
+- 1001 (9)
+- 1111 (15)
+
+Tous les autres nombres (12 sur 16) ne sont PAS des palindromes.
+
+### Q5 : Comment fonctionne la conversion Gray Code ?
+**R :** 
+- **B[0]=0** : Convertit de Binaire vers Gray
+- **B[0]=1** : Convertit de Gray vers Binaire
+Le code Gray est utilisé dans l'industrie car deux valeurs consécutives ne diffèrent que d'un seul bit.
+
+### Q6 : Puis-je ajouter plus d'opérations ?
+**R :** Oui ! SEL va de 0000 à 1111, donc vous pouvez ajouter jusqu'à 6 opérations supplémentaires (SEL=1010 à 1111). Suivez le même pattern modulaire.
+
+### Q7 : Quelle est la différence entre UAL_principale.vhd et UAL_principale_v2.vhd ?
+**R :** 
+- `UAL_principale.vhd` : Version avec 8 opérations (anciennes)
+- `UAL_principale_v2.vhd` : Version avec 10 opérations (incluant Palindrome et Gray Code) ⭐ **Utilisez celle-ci !**
+
+### Q8 : Les résultats s'affichent-ils sur le 7-segments ?
+**R :** Oui ! Toutes les 10 opérations affichent leurs résultats sur l'afficheur 7 segments en hexadécimal (0-F).
+
+### Q9 : Combien de ressources FPGA cette UAL utilise-t-elle ?
+**R :** Estimation pour Artix-7 :
+- LUTs : ~230 (version 10 opérations)
+- Flip-Flops : ~23
+- Slices : ~100
+Très raisonnable pour une UAL complète !
+
+### Q10 : Où trouver plus d'informations sur les nouvelles opérations ?
+**R :** Consultez le fichier `NOUVELLES_OPERATIONS.md` pour :
+- Tables de conversion Gray complètes
+- Explication détaillée des palindromes
+- Applications réelles
+- Exemples de tests
+
+---
+
+## 🆕 Comparaison : Version 8 vs Version 10
+
+| Aspect | Version 8 | Version 10 |
+|--------|-----------|------------|
+| Opérations | 8 | 10 |
+| Fichiers .vhd | 10 | 12 |
+| Originalité | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| Applications réelles | Bonnes | Excellentes |
+| Pattern matching | ❌ | ✅ Palindrome |
+| Codes industriels | ❌ | ✅ Gray Code |
+| LUTs (Artix-7) | ~175 | ~230 |
+| Complexité | Moyenne | Moyenne |
+
+**Recommandation :** Utilisez la **Version 10** pour un projet plus complet et original ! 🚀
+
 ---
 
 ## Support et Modifications
@@ -388,11 +675,19 @@ Si une opération ne fonctionne pas :
 
 ## Auteur et Licence
 
-Architecture VHDL modulaire pour UAL 4 bits
+Architecture VHDL modulaire pour UAL 4 bits - **Version 2.0 (10 Opérations)**
 Conçu pour l'enseignement et l'apprentissage du VHDL sur FPGA
 
 📧 Pour toute question ou amélioration, n'hésitez pas !
 
+**Documentation complémentaire :**
+- `NOUVELLES_OPERATIONS.md` - Guide détaillé Palindrome & Gray Code
+- `GUIDE_MIGRATION.txt` - Migration 8→10 opérations
+- `FIX_PALINDROME_BUG.txt` - Correction du bug palindrome
+- `GUIDE_CONNEXION_MATERIELLE.txt` - Schémas de câblage détaillés
+
 ---
 
 **Bonne programmation FPGA ! 🚀**
+
+*Dernière mise à jour : Février 2026*
