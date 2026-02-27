@@ -73,20 +73,16 @@ UAL_principale (Top Module)
 | Fichier | Description |
 |---------|-------------|
 | `UAL_principale_v2_tb.vhd` | Testbench complet pour simulation (10 opérations) |
-| `palindrome_detector_test.vhd` | Testbench exhaustif pour le palindrome |
 | `testbenches_individuels.vhd` | Tests unitaires des modules de base |
 | `UAL_contraintes.xdc` | Contraintes pour Basys3/Nexys (exemple) |
+| `io_contraintes.xdc` | Contraintes finales  |
 
 ### Documentation
 
 | Fichier | Description |
 |---------|-------------|
 | `README.md` | Documentation principale (ce fichier) |
-| `NOUVELLES_OPERATIONS.md` | Documentation détaillée des 2 nouvelles opérations |
-| `STRUCTURE_PROJET.txt` | Organisation et checklist |
-| `GUIDE_CONNEXION_MATERIELLE.txt` | Schémas de câblage FPGA |
-| `GUIDE_MIGRATION.txt` | Comment passer de 8 à 10 opérations |
-| `FIX_PALINDROME_BUG.txt` | Explication du bug palindrome et correction |
+
 
 ---
 
@@ -194,7 +190,7 @@ A = 0101 (initialise à 5), B = 0010 (enable=1, up)
 
 ---
 
-## Nouvelles Opérations Originales
+
 
 ### SEL = 1000 : Détecteur de Palindrome 
 
@@ -243,11 +239,6 @@ L'afficheur montre "0" pour les 6 nombres qui n'ont AUCUNE paire symétrique :
 - **1010** : Bit[0]≠Bit[3] ET Bit[1]≠Bit[2] → Aucune symétrie
 - **1110** : Bit[0]≠Bit[3] ET Bit[1]≠Bit[2] → Aucune symétrie
 
-**Pourquoi c'est intéressant :**
-- Pattern matching de base
-- Introduction aux algorithmes de reconnaissance
-- Visualisation de symétries binaires
-- Unique et original !
 
 ---
 
@@ -476,52 +467,15 @@ Le testbench `UAL_principale_v2_tb.vhd` teste toutes les **10 opérations** :
 ✅ **Palindrome** : test de tous les palindromes 4 bits ⭐
 ✅ **Gray Code** : conversions Bin→Gray et Gray→Bin ⭐
 
-### Testbench spécifique palindrome
 
-Pour tester exhaustivement le détecteur de palindrome :
-```
-Utilisez palindrome_detector_test.vhd
-→ Teste TOUS les 16 cas possibles (0000 à 1111)
-→ Affiche les résultats détaillés pour chaque valeur
-```
-
-### Temps de simulation
-
-La simulation complète s'exécute sur ~1.5 µs et affiche des rapports à chaque test.
-
----
 
 ## Notes Importantes
 
-### ⚠️ Afficheur 7 segments
-- Le code fourni génère un signal pour **cathode commune** (actif à '0')
-- Si votre carte utilise **anode commune**, inversez `seg_display` dans les contraintes
-- Pour afficher sur plusieurs afficheurs, ajoutez un multiplexeur temporel
-
-### ⚠️ Horloge
-- Opérations **SANS horloge** : 0000, 0001, 0110, 0111, **1000, 1001**
-- Opérations **AVEC horloge** : 0010, 0011, 0100, 0101
-
-**Important** : Les 2 nouvelles opérations (Palindrome et Gray Code) sont **combinatoires** et ne nécessitent PAS d'horloge !
 
 ### ⚠️ Reset
 - Toujours faire un reset initial pour les opérations séquentielles
 - Reset asynchrone actif haut ('1' = reset)
 
-### 💡 Astuces pour les nouvelles opérations
-
-**Palindrome :**
-- Palindromes 4 bits : uniquement 0000, 0110, 1001, 1111
-- L'afficheur montre "5" pour palindromes, "2" pour 1 symétrie, "0" pour aucune symétrie
-- Le flag `carry` est le meilleur indicateur : '1' = palindrome parfait
-
-**Gray Code :**
-- Utilisez B[0] pour changer la direction de conversion
-- B[0]=0 : Binaire → Gray (mode par défaut)
-- B[0]=1 : Gray → Binaire (mode inverse)
-- Très visuel : changez A et observez que la transition ne change qu'un seul segment !
-
----
 
 ## Exemples Pratiques
 
@@ -575,79 +529,8 @@ A = 0100 → Afficheur = "6"
 On observe que chaque transition ne change qu'un segment!
 ```
 
----
 
-## 📚 FAQ - Questions Fréquentes
 
-### Q1 : Combien d'opérations possède cette UAL ?
-**R :** 10 opérations au total : 8 opérations de base + 2 opérations avancées (Palindrome et Gray Code).
-
-### Q2 : Quelles sont les opérations qui nécessitent une horloge ?
-**R :** Seulement 4 opérations : FSM Mealy (SEL=0010 et 0011), Shift Register (SEL=0100), et Compteur (SEL=0101). Les nouvelles opérations Palindrome et Gray Code sont combinatoires (pas d'horloge).
-
-### Q3 : Pourquoi le palindrome affiche-t-il "0" pour 1010 ?
-**R :** C'est **correct** ! 1010 n'a AUCUNE paire de bits symétriques :
-- Bit[0] vs Bit[3] : 0 ≠ 1 (pas symétrique)
-- Bit[1] vs Bit[2] : 1 ≠ 0 (pas symétrique)
-Donc result = 0000 → Afficheur = "0"
-
-**Les 6 nombres qui donnent "0" :**
-0001, 0010, 0100, 1000, 1010, 1110 (aucune symétrie)
-
-### Q4 : Quels nombres sont des palindromes sur 4 bits ?
-**R :** Il y a exactement **4 palindromes** sur 4 bits :
-- 0000 (0)
-- 0110 (6)
-- 1001 (9)
-- 1111 (15)
-
-Tous les autres nombres (12 sur 16) ne sont PAS des palindromes.
-
-### Q5 : Comment fonctionne la conversion Gray Code ?
-**R :** 
-- **B[0]=0** : Convertit de Binaire vers Gray
-- **B[0]=1** : Convertit de Gray vers Binaire
-Le code Gray est utilisé dans l'industrie car deux valeurs consécutives ne diffèrent que d'un seul bit.
-
-### Q6 : Puis-je ajouter plus d'opérations ?
-**R :** Oui ! SEL va de 0000 à 1111, donc vous pouvez ajouter jusqu'à 6 opérations supplémentaires (SEL=1010 à 1111). Suivez le même pattern modulaire.
-
-### Q7 : Quelle est la différence entre UAL_principale.vhd et UAL_principale_v2.vhd ?
-**R :** 
-- `UAL_principale.vhd` : Version avec 8 opérations (anciennes)
-- `UAL_principale_v2.vhd` : Version avec 10 opérations (incluant Palindrome et Gray Code) ⭐ **Utilisez celle-ci !**
-
-### Q8 : Les résultats s'affichent-ils sur le 7-segments ?
-**R :** Oui ! Toutes les 10 opérations affichent leurs résultats sur l'afficheur 7 segments en hexadécimal (0-F).
-
-### Q9 : Combien de ressources FPGA cette UAL utilise-t-elle ?
-**R :** Estimation pour Artix-7 :
-- LUTs : ~230 (version 10 opérations)
-- Flip-Flops : ~23
-- Slices : ~100
-Très raisonnable pour une UAL complète !
-
-### Q10 : Où trouver plus d'informations sur les nouvelles opérations ?
-**R :** Consultez le fichier `NOUVELLES_OPERATIONS.md` pour :
-- Tables de conversion Gray complètes
-- Explication détaillée des palindromes
-- Applications réelles
-- Exemples de tests
-
----
-
-## 🆕 Comparaison : Version 8 vs Version 10
-
-| Aspect | Version 8 | Version 10 |
-|--------|-----------|------------|
-| Opérations | 8 | 10 |
-| Fichiers .vhd | 10 | 12 |
-| Originalité | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| Applications réelles | Bonnes | Excellentes |
-| Pattern matching | ❌ | ✅ Palindrome |
-| Codes industriels | ❌ | ✅ Gray Code |
-| LUTs (Artix-7) | ~175 | ~230 |
-| Complexité | Moyenne | Moyenne |
 
 **Recommandation :** Utilisez la **Version 10** pour un projet plus complet et original ! 🚀
 
@@ -675,19 +558,14 @@ Si une opération ne fonctionne pas :
 
 ## Auteur et Licence
 
-Architecture VHDL modulaire pour UAL 4 bits - **Version 2.0 (10 Opérations)**
+**Version 2.0 (10 Opérations)**
 Conçu pour l'enseignement et l'apprentissage du VHDL sur FPGA
 
 📧 Pour toute question ou amélioration, n'hésitez pas !
 
-**Documentation complémentaire :**
-- `NOUVELLES_OPERATIONS.md` - Guide détaillé Palindrome & Gray Code
-- `GUIDE_MIGRATION.txt` - Migration 8→10 opérations
-- `FIX_PALINDROME_BUG.txt` - Correction du bug palindrome
-- `GUIDE_CONNEXION_MATERIELLE.txt` - Schémas de câblage détaillés
-
----
 
 **Bonne programmation FPGA ! 🚀**
-
 *Dernière mise à jour : Février 2026*
+
+Built with ❤️ for learning Embedded systems.
+
